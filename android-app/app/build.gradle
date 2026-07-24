@@ -1,0 +1,123 @@
+import java.util.Properties
+
+plugins {
+    id('com.android.application')
+    id('org.jetbrains.kotlin.android')
+    id('com.google.gms.google-services')
+}
+
+def envFile = file("${rootProject.projectDir}/.env")
+def env = new Properties()
+if (envFile.exists()) {
+    env.load(new FileInputStream(envFile))
+}
+
+android {
+    namespace 'com.example.voiceverify'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "com.example.voiceverify"
+        minSdk 24
+        targetSdk 35
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        // Vonage credentials — API Secret and Private Key are NEVER stored on the client.
+        // Only Application ID (public) and Backend URL are needed on Android.
+        // Priority: env file > gradle property > system env > default
+        def appId = env.getProperty("VONAGE_APPLICATION_ID")
+            ?: (project.hasProperty("VONAGE_APPLICATION_ID") ? project.property("VONAGE_APPLICATION_ID")
+            : (System.getenv("VONAGE_APPLICATION_ID") ?: "your-app-id"))
+        def backendUrl = env.getProperty("BACKEND_URL")
+            ?: (project.findProperty("BACKEND_URL")
+            ?: (System.getenv("BACKEND_URL") ?: "http://localhost:3000"))
+        buildConfigField "String", "VONAGE_APPLICATION_ID", "\"${appId}\""
+        buildConfigField "String", "BACKEND_URL", "\"${backendUrl}\""
+
+        // Signing config (optional — if not set, APK is unsigned for debug)
+        if (project.hasProperty("SIGNING_STORE_FILE")) {
+            signingConfigs {
+                release {
+                    storeFile file(project.property("SIGNING_STORE_FILE"))
+                    storePassword project.property("SIGNING_STORE_PASSWORD")
+                    keyAlias project.property("SIGNING_KEY_ALIAS")
+                    keyPassword project.property("SIGNING_KEY_PASSWORD")
+                }
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            if (project.hasProperty("SIGNING_STORE_FILE")) {
+                signingConfig signingConfigs.release
+            }
+            proguardFiles(
+                getDefaultProguardFile('proguard-android-optimize.txt'),
+                'proguard-rules.pro'
+            )
+        }
+        debug {
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+
+    buildFeatures {
+        viewBinding true
+        buildConfig true
+    }
+}
+
+dependencies {
+    // AndroidX Core
+    implementation('androidx.core:core-ktx:1.12.0')
+    implementation('androidx.appcompat:appcompat:1.6.1')
+    implementation('com.google.android.material:material:1.11.0')
+    implementation('androidx.constraintlayout:constraintlayout:2.1.4')
+    implementation('androidx.activity:activity-ktx:1.8.2')
+    implementation('androidx.fragment:fragment-ktx:1.6.2')
+
+    // Security (EncryptedSharedPreferences)
+    implementation('androidx.security:security-crypto:1.1.0-alpha06')
+
+    // Lifecycle
+    implementation('androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0')
+    implementation('androidx.lifecycle:lifecycle-livedata-ktx:2.7.0')
+
+    // Network
+    implementation('com.squareup.retrofit2:retrofit:2.9.0')
+    implementation('com.squareup.retrofit2:converter-gson:2.9.0')
+    implementation('com.squareup.okhttp3:okhttp:4.12.0')
+    implementation('com.google.code.gson:gson:2.10.1')
+
+    // Vonage SDKs (In-App Voice + Number Verification)
+    implementation('com.vonage:client-sdk-voice:2.6.0')
+    implementation('com.vonage:client-sdk-number-verification:1.1.1')
+
+    // Coroutines
+    implementation('org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3')
+    implementation('org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3')
+
+    // Firebase
+    implementation platform('com.google.firebase:firebase-bom:32.7.0')
+    implementation('com.google.firebase:firebase-messaging-ktx')
+    implementation('com.google.firebase:firebase-analytics-ktx')
+
+    // Testing
+    testImplementation('junit:junit:4.13.2')
+    androidTestImplementation('androidx.test.ext:junit:1.1.5')
+    androidTestImplementation('androidx.test.espresso:espresso-core:3.5.1')
+}

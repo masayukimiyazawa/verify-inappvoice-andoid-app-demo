@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data-extraction-rules>
+    <cloud-backup>
+        <!-- SharedPreferences are encrypted via EncryptedSharedPreferences.
+             Include them so user doesn't lose data on device restore. -->
+        <include domain="sharedpref" path="."/>
+    </cloud-backup>
+</data-extraction-rules>

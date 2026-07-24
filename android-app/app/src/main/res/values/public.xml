@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_id">VoiceVerify</string>
+    <string name="vonage_api_key_placeholder">YOUR_VONAGE_API_KEY</string>
+    <string name="vonage_api_secret_placeholder">YOUR_VONAGE_API_SECRET</string>
+    <string name="vonage_application_id_placeholder">YOUR_VONAGE_APPLICATION_ID</string>
+    <string name="backend_url_placeholder">http://localhost:3000</string>
+</resources>

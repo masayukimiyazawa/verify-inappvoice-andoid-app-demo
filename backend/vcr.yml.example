@@ -1,0 +1,37 @@
+project:
+  name: voiceverify
+
+instance:
+  name: prod
+  runtime: nodejs22
+  region: aws.apse1
+  application-id: ${VONAGE_APPLICATION_ID}
+  entrypoint:
+    - node
+    - dist/server.js
+  environment:
+    - name: VONAGE_API_KEY
+      secret: VONAGE_API_KEY
+    - name: VONAGE_API_SECRET
+      secret: VONAGE_API_SECRET
+    - name: VONAGE_APPLICATION_ID
+      secret: VONAGE_APPLICATION_ID
+    - name: VONAGE_PRIVATE_KEY
+      secret: VONAGE_PRIVATE_KEY
+    - name: VONAGE_BRAND_NAME
+      value: "VoiceVerify"
+    - name: VONAGE_PHONE_NUMBER
+      secret: VONAGE_PHONE_NUMBER
+    - name: MONGODB_URI
+      secret: MONGODB_URI
+    - name: MONGODB_DB_NAME
+      value: "voiceverify"
+    - name: ALLOWED_ORIGINS
+      value: "*"
+    - name: ALLOWED_PHONE_NUMBER
+      secret: ALLOWED_PHONE_NUMBER
+  build-script: npm install && npm run build
+  health-check-path: /_/health
+  capabilities:
+    - voice
+    - rtc

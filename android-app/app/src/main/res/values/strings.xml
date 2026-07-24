@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">VoiceVerify</string>
+    <string name="app_login_title">Voice Call App</string>
+    <string name="app_login_subtitle">Log in with your phone number to make calls</string>
+    <string name="phone_number_hint">Phone number (e.g. +81901234567)</string>
+    <string name="display_name_hint">Display name (optional)</string>
+    <string name="btn_send_verification">Send verification code</string>
+    <string name="btn_login_with_phone">Log in with phone number</string>
+
+    <string name="verify_title">Verify Code</string>
+    <string name="verification_code_hint">6-digit verification code</string>
+    <string name="btn_verify_code">Verify</string>
+    <string name="btn_resend_code">Resend code</string>
+
+    <string name="dialpad_title">Dial</string>
+    <string name="call">Call</string>
+
+    <string name="call_status_connecting">Connecting\u2026</string>
+    <string name="call_status_connected">In call</string>
+    <string name="call_status_hangup">Call ended</string>
+
+    <string name="mute">Mute</string>
+    <string name="speaker">Speaker</string>
+    <string name="hang_up">Hang up</string>
+
+    <string name="incoming_call">Incoming call</string>
+    <string name="ringing_from">Incoming call from %s</string>
+    <string name="unknown_caller">Unknown caller</string>
+    <string name="accept">Accept</string>
+    <string name="decline">Decline</string>
+
+    <string name="error_network">A network error occurred</string>
+    <string name="error_invalid_phone">Please enter a valid phone number</string>
+    <string name="error_verification_failed">Verification failed. Please try again.</string>
+    <string name="success_verified">Verification complete! You are logged in.</string>
+
+    <string name="permission_audio_required">Please grant audio recording permission</string>
+    <string name="permission_camera_required">Please grant camera permission</string>
+    <string name="permission_phone_required">Please grant phone state access permission</string>
+    <string name="error_permission_denied">Permission denied</string>
+    <string name="muted">Muted</string>
+    <string name="unmuted">Unmuted</string>
+    <string name="calling">Calling\u2026</string>
+    <string name="voice_session_not_ready">Voice session is not ready. Please wait.</string>
+    <string name="voice_session_retrying">Retrying session connection\u2026</string>
+    <string name="voice_session_retry_count">Connecting session\u2026 (%1$d/%2$d)</string>
+    <string name="voice_session_failed">Session connection failed</string>
+    <string name="call_status_ringing">Ringing\u2026</string>
+    <string name="call_status_error">Call error: %1$s</string>
+</resources>

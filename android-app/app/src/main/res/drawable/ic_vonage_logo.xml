@@ -1,0 +1,10 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp"
+    android:height="200dp"
+    android:viewportWidth="200"
+    android:viewportHeight="200">
+    <!-- Vonage V logo -->
+    <path
+        android:fillColor="#00B9F1"
+        android:pathData="M28,20 L72,20 L100,115 L128,20 L172,20 L128,170 L72,170 Z" />
+</vector>

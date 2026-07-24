@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- SharedPreferences are encrypted via EncryptedSharedPreferences.
+         Include them so user doesn't lose data on device restore. -->
+    <include domain="sharedpref" path="."/>
+</full-backup-content>

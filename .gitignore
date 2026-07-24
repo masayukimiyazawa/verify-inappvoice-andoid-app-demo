@@ -1,0 +1,53 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Build output
+dist/
+**/build/
+
+# Environment files (keep secrets private)
+.env
+.env.local
+.env.production
+
+# Vonage private key
+keys/*.pem
+keys/*.key
+
+# Firebase service account key
+keys/*.json
+!.gitkeep
+
+# Backend private keys and service accounts (subdirectory)
+backend/keys/*
+!backend/keys/.gitkeep
+
+# Generated VCR deployment config (use vcr.yml.example as template)
+backend/vcr.yml
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Android
+android-app/build/
+android-app/app/build/
+android-app/.idea/
+android-app/.gradle/
+android-app/local.properties
+android-app/**/*.keystore
+android-app/app/*.apk
+android-app/app/google-services.json
+R.txt
+
+# Binary artifacts (should be managed via dependency system, not committed)
+classes.jar
+jni/
+META-INF/
+assets/models/*.tflite
+
+# OS
+.DS_Store
+Thumbs.db

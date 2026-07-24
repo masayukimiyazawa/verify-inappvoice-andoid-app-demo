@@ -1,0 +1,13 @@
+{
+  "name": "voiceverify",
+  "region": "apac",
+  "runtime": "nodejs20",
+  "functions": {
+    "handler": {
+      "entrypoint": "dist/index.handler",
+      "route": "{*path}"
+    }
+  },
+  "buildCommand": "npm install && npm run build",
+  "outputDirectory": "dist"
+}
