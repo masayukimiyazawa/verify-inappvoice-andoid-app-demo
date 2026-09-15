@@ -1,0 +1,36 @@
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#E8F0FE','primaryTextColor':'#1A1A1A','primaryBorderColor':'#1A73E8','lineColor':'#5F6368','fontFamily':'Hiragino Sans, Yu Gothic, Meiryo, sans-serif'}, 'sequence':{'mirrorActors':false}}}%%
+sequenceDiagram
+    autonumber
+    actor User as ユーザー
+    participant App as Android App<br/>(PhoneInput/VerifyCode<br/>AuthViewModel)
+    participant VCR as Backend (VCR)<br/>auth.ts / index.ts
+    participant DB as MongoDB<br/>phone_users
+    participant Verify as Verify V2 API<br/>api.nexmo.com
+
+    User->>App: 電話番号 + 表示名を入力
+    App->>App: 正規化（先頭+除去）<br/>/^[1-9]d{5,14}$/ 検証
+    App->>VCR: POST /api/auth/send-otp<br/>{phoneNumber, displayName}
+    VCR->>VCR: RateLimit otp:IP 5分5回
+    VCR->>VCR: E.164検証 + ALLOWED_PHONE_NUMBER照合
+    VCR->>DB: updateOne upsert<br/>{isVerified:false, verifyRequestId:未設定}
+    VCR->>VCR: tokenGenerate(JWT ttl3600 aud:api.nexmo.com)
+    VCR->>Verify: POST /v2/verify<br/>{brand, code_length:6, workflow:[sms]}
+    Verify-->>VCR: {request_id, status}
+    VCR->>DB: verifyRequestIdを保存
+    VCR-->>App: 200 {requestId, message}
+    App-->>User: 認証コード入力画面へ遷移
+    User->>App: 6桁SMSコードを入力
+    App->>VCR: POST /api/auth/verify-otp<br/>{phoneNumber, code}
+    VCR->>VCR: RateLimit verify:IP 5分10回
+    VCR->>DB: findOne(phoneNumber)<br/>verifyRequestId存在確認
+    VCR->>Verify: POST /v2/verify/{requestId} {code}
+    Verify-->>VCR: {status: completed/failed}
+    alt completed（成功）
+        VCR->>DB: $set {isVerified:true, verifiedAt}
+        VCR->>VCR: generateJWT (RS256手書き)<br/>aud:voice-ng-vapi / 1h
+        VCR-->>App: 200 {verified:true, token, user}
+        App->>App: EncryptedSharedPrefsへ保存<br/>+ VoiceToken取得へ続く
+    else failed / pendingなし
+        VCR-->>App: 400 {verified:false, status}
+        App-->>User: エラー表示 + 再送タイマー60秒
+    end

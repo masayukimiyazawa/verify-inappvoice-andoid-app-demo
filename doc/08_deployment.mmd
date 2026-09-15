@@ -1,0 +1,22 @@
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#F3E8FD','primaryTextColor':'#1A1A1A','primaryBorderColor':'#7030A0','lineColor':'#5F6368','fontFamily':'Hiragino Sans, Yu Gothic, Meiryo, sans-serif'}}}%%
+flowchart TB
+    LOCAL["Backend npm run dev :3000<br/>server.ts (node:httpアダプタ)"]
+    TUNNEL["Cloudflare Tunnel<br/>cloudflared --url :3000"]
+    EMU["Android Emulator (debug)<br/>BACKEND_URL=Tunnel/LAN IP"]
+    VAPP["Vonage Application<br/>Answer/Event URL自動登録<br/>PUT /v2/applications"]
+    LOCAL --> TUNNEL --> EMU
+    TUNNEL --> VAPP
+    EMU --> VCR
+    VCR["VCR Deploy (nodejs20)<br/>voiceverify-xxx.apac.runtime.vonage.com"]
+    MONGO[("MongoDB Atlas<br/>0.0.0.0/0許可")]
+    VCR <--> MONGO
+    ENVFILE["android-app/.env (推奨)"]
+    PFLAG["Gradle -P フラグ"]
+    GPROP["gradle.properties / 環境変数"]
+    RESOLVE["BACKEND_URL解決 → BuildConfig埋込<br/>優先: .env > -P > properties > env > localhost"]
+    APK["assembleRelease/debug<br/>署名jks (releaseのみ)"]
+    ENVFILE --> RESOLVE
+    PFLAG --> RESOLVE
+    GPROP --> RESOLVE
+    VCR -->|"BACKEND_URL"| RESOLVE
+    RESOLVE --> APK

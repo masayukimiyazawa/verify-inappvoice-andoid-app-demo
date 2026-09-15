@@ -1,0 +1,14 @@
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#E8F0FE','primaryTextColor':'#1A1A1A','primaryBorderColor':'#1A73E8','lineColor':'#5F6368','fontFamily':'Hiragino Sans, Yu Gothic, Meiryo, sans-serif'}}}%%
+flowchart LR
+    VEV["POST webhooks<br/>署名検証"]
+    INS["call_events<br/>insertOne"]
+    C5{"ALLOWED番号<br/>一致?"}
+    UPD["phone_users更新<br/>在席/回数"]
+    SKIP["更新skip<br/>200返却"]
+    INV["着信3経路<br/>Listener/FCM/Service"]
+    SVC["ForegroundService<br/>通知+Ringtone"]
+    INCA["IncomingCall<br/>→ Call画面"]
+    VEV --> INS --> C5
+    C5 -- Yes --> UPD --> INV
+    C5 -- No --> SKIP --> INV
+    INV --> SVC --> INCA

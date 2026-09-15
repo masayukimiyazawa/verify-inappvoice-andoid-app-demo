@@ -1,0 +1,45 @@
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#E8F0FE','primaryTextColor':'#1A1A1A','primaryBorderColor':'#1A73E8','lineColor':'#5F6368','fontFamily':'Hiragino Sans, Yu Gothic, Meiryo, sans-serif'}}}%%
+flowchart TB
+    subgraph UI_LAYER["UI層 (Activity + ViewBinding)"]
+        PIA["PhoneInputActivity<br/>LAUNCHER / +81初期値<br/>+除去 + 6桁検証"]
+        VCA["VerifyCodeActivity<br/>6桁入力 + 60秒ResendTimer"]
+        DPA["DialPadActivity<br/>テンキー + serverCall発信"]
+        CAA["CallActivity<br/>Connecting/Connected/Hungup<br/>Mute/Speaker/Hangup"]
+        ICA["IncomingCallActivity<br/>LOCK画面対応 + Ringtone"]
+    end
+    subgraph VM_LAYER["ViewModel層"]
+        AVM["AuthViewModel<br/>sendOTP/verifyOTP<br/>AuthState LiveData"]
+        DVM["DialPadViewModel<br/>phone LiveDataのみ<br/>(純粋・NW非依存)"]
+        CVM["CallViewModel<br/>CallState + mute/speaker<br/>Applicationへ委譲"]
+    end
+    subgraph DATA_LAYER["Data層"]
+        RETRO["RetrofitClient<br/>Bearer付与 + 30秒timeout<br/>Gson + HEADERS log"]
+        API["ApiService<br/>7 endpoint定義<br/>execute/enqueue混在"]
+        PREF["SharedPreferencesManager<br/>EncryptedSharedPrefs<br/>token/phone/userId保存"]
+    end
+    subgraph SDK_LAYER["SDK・Service層"]
+        APP["VoiceVerifyApplication<br/>VGClient AP地域 / Session管理<br/>13種Listener / reconnect"]
+        VSVC["VonageVoiceService<br/>Foreground START_STICKY<br/>通知 + Ringtone + 音声Focus"]
+        FSVC["FirebaseMessagingService<br/>vonage inviteのみ処理<br/>processPushCallInviteSync"]
+        HELP["VoiceClientHelper.java<br/>createClient薄ラッパ"]
+        RING["RingtonePlayer<br/>多重防止 + release"]
+    end
+    PIA --> AVM
+    VCA --> AVM
+    DPA --> DVM
+    CAA --> CVM
+    ICA --> APP
+    AVM --> RETRO
+    CVM --> APP
+    DPA --> APP
+    RETRO --> API
+    AVM --> PREF
+    APP --> RETRO
+    VSVC --> APP
+    FSVC --> APP
+    APP --> HELP
+    VSVC --> RING
+    ICA --> RING
+    PIA -- "Success→VerifyCode" --> VCA
+    VCA -- "Success→DialPad" --> DPA
+    DPA -- "serverCall成功→Call" --> CAA

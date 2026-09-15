@@ -1,0 +1,31 @@
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#E6F4EA','primaryTextColor':'#1A1A1A','primaryBorderColor':'#137333','lineColor':'#5F6368','fontFamily':'Hiragino Sans, Yu Gothic, Meiryo, sans-serif'}}}%%
+sequenceDiagram
+    autonumber
+    participant App as Android App<br/>(AuthVM / Application)
+    participant VCR as Backend voiceAuth.ts<br/>(JWT必須)
+    participant DB as MongoDB<br/>user_tokens / push_tokens
+    participant UAPI as Users API (AP)<br/>api-ap.vonage.com
+
+    App->>VCR: POST /api/voice/auth/token {userId(E.164)}
+    VCR->>VCR: PHONE_REGEX + ALLOWED照合<br/>RateLimit token:IP 1分10回
+    VCR->>VCR: sysadmin JWT生成 (exp 120秒)
+    VCR->>UAPI: POST /v1/users {name:e164}
+    alt 201 Created / 409 exists
+        Note over VCR,UAPI: 正常継続（他エラーも継続）
+    end
+    VCR->>VCR: InApp JWT生成 (sub:e164, 24h)<br/>acl: sessions/conversations/rtc等
+    VCR->>DB: user_tokens insert<br/>{tokenHash(sha256先頭16), sessionId, deviceId}
+    VCR-->>App: 200 {token, session_id, device_id}
+    App->>App: saveVoiceToken + createSession(token)<br/>isSessionReady=true
+    App->>VCR: POST /api/voice/register {userId, action:register}
+    VCR->>DB: phone_users upsert<br/>{isInAppAvailable:true}
+    VCR-->>App: 200 {isInAppAvailable:true}
+    App->>App: FCM onNewToken取得時
+    App->>VCR: POST /api/voice/push-token<br/>{userId, deviceId, pushToken}
+    VCR->>DB: push_tokens upsert
+    VCR-->>App: 200 {success:true}
+    Note over App,VCR: セッション切断・再起動時
+    App->>VCR: POST /api/voice/reconnect {userId}
+    VCR->>VCR: 同ACLで24h JWT再生成のみ<br/>(DB書込・Users作成なし)
+    VCR-->>App: 200 {token, session_id, device_id}
+    App->>App: initVoiceClientWithToken(newToken)

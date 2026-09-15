@@ -1,0 +1,49 @@
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#E6F4EA','primaryTextColor':'#1A1A1A','primaryBorderColor':'#137333','lineColor':'#5F6368','fontFamily':'Hiragino Sans, Yu Gothic, Meiryo, sans-serif'}}}%%
+erDiagram
+    phone_users {
+        ObjectId _id PK
+        string phoneNumber "UK的利用 (+有/無混在注意)"
+        string displayName "nullable"
+        boolean isVerified
+        string verifyRequestId "VerifyV2 request_id"
+        boolean isInAppAvailable
+        int totalCalls "webhookでinc"
+        string lastCallStatus
+        datetime lastCallAt
+        datetime verifiedAt "動的field"
+        datetime createdAt
+        datetime updatedAt
+    }
+    call_events {
+        ObjectId _id PK
+        string uuid "Vonage call uuid"
+        string event "started/ringing/answered/completed等"
+        string to
+        string from
+        string conversationUuid
+        string status
+        int duration
+        string recordingUrl
+        datetime createdAt
+    }
+    user_tokens {
+        ObjectId _id PK
+        string userId "E.164 (+有)"
+        string tokenHash "sha256先頭16桁"
+        string sessionId "uuid"
+        string deviceId "uuid"
+        datetime issuedAt
+        datetime expiresAt "24h"
+        boolean used "常時false"
+    }
+    push_tokens {
+        ObjectId _id PK
+        string userId "E.164"
+        string deviceId
+        string pushToken "FCM token"
+        datetime createdAt
+        datetime updatedAt
+    }
+    phone_users ||--o{ call_events : "to/fromで紐付け(非FK)"
+    phone_users ||--o{ user_tokens : "userIdで紐付け(非FK)"
+    phone_users ||--o{ push_tokens : "userIdで紐付け(非FK)"

@@ -1,0 +1,28 @@
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#E8F0FE','primaryTextColor':'#1A1A1A','primaryBorderColor':'#1A73E8','lineColor':'#5F6368','fontFamily':'Hiragino Sans, Yu Gothic, Meiryo, sans-serif'}, 'flowchart':{'curve':'linear'}}}%%
+flowchart TB
+    REQ(["HTTP Request<br/>(VCREvent: path/method/headers/body)"])
+    REQ --> HEALTH{"path == /_/health ?"}
+    HEALTH -- Yes --> H200["200 text/plain OK"]
+    HEALTH -- No --> CORS{"method == OPTIONS ?"}
+    CORS -- Yes --> C204["204 + CORSヘッダー"]
+    CORS -- No --> WEBHK{"path == /webhooks/voice-events ?"}
+    WEBHK -- Yes --> SIG["verifyWebhookSignature<br/>HMAC-SHA256 / 5分以内 / timingSafeEqual"]
+    SIG -->|NG 401| RET401A["401 SignatureInvalid"]
+    SIG -->|OK / skip| VEH["voiceEventHandler<br/>call_events insert / phone_users更新"]
+    WEBHK -- No --> RL{"method == POST ?<br/>RateLimit判定"}
+    RL -- "otp:IP 5分5回<br/>verify:IP 5分10回<br/>call:IP 1分5回<br/>token:IP 1分10回" --> OVER{"超過 ?"}
+    OVER -- Yes --> R429["429 + Retry-After"]
+    OVER -- No --> ROUTE["ルーティング (認証不要)"]
+    ROUTE --> SOTP["POST /api/auth/send-otp<br/>handleSendOTP"]
+    ROUTE --> VOTP["POST /api/auth/verify-otp<br/>handleVerifyOTP"]
+    ROUTE --> LIST["/api/auth/users<br/>handleListUsers"]
+    ROUTE --> NCCO["/api/voice/ncco<br/>handleNCCO"]
+    ROUTE --> NEEDJWT["その他 → verifyJWT必須<br/>RSA-SHA256 / exp / user.id"]
+    NEEDJWT -->|401/500| RET401B["401 Missing/Bearer/Expired"]
+    NEEDJWT -->|OK| PROT["保護ルート"]
+    PROT --> CALL["POST /api/voice/call<br/>handleInitiateOutgoingCall"]
+    PROT --> TOK["POST /api/voice/auth/token<br/>voiceAuth.handler"]
+    PROT --> REG["POST /api/voice/register"]
+    PROT --> PUSH["POST /api/voice/push-token"]
+    PROT --> RECON["POST /api/voice/reconnect"]
+    PROT --> NOTFOUND["404 Not Found"]

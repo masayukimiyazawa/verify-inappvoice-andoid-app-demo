@@ -1,0 +1,32 @@
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#FEF7E0','primaryTextColor':'#1A1A1A','primaryBorderColor':'#E8710A','lineColor':'#5F6368','fontFamily':'Hiragino Sans, Yu Gothic, Meiryo, sans-serif'}}}%%
+flowchart TB
+    DIAL["DialPad: 7桁検証 + 音声許可 + E.164化<br/>Session未 ready時は最大5回リトライ"]
+    SCALL["voiceClient.serverCall<br/>{to:E.164, type:outbound}"]
+    VAPI1["Vonage Voice API<br/>Answer Webhook起動"]
+    NCCO_OUT["GET /api/voice/ncco<br/>type=outbound → connect phone"]
+    DIAL --> SCALL --> VAPI1 --> NCCO_OUT
+    NCCO_OUT --> VIN
+    VIN["Voice API → GET /api/voice/ncco<br/>{to/from/context}"]
+    C1{"type==outbound<br/>or inapp?"}
+    VIN --> C1
+    C1 -- Yes --> NOUT2["connect phone (発信継続)<br/>from: VONAGE番号"]
+    C1 -- No --> C2{"calledNumber<br/>なし?"}
+    C2 -- Yes --> TALK1["talk: Invalid call. Goodbye."]
+    C2 -- No --> LOOKUP["phone_users 4優先検索<br/>verified+有 → verified無 → any有 → any無"]
+    LOOKUP --> C3{"isVerified and<br/>isInAppAvailable?"}
+    C3 -- Yes --> NAPP["connect app (InApp優先)<br/>endpoint app:user=E.164"]
+    C3 -- No --> C4{"pstnNumber<br/>あり?"}
+    C4 -- Yes --> NPSTN["connect phone<br/>PSTNフォールバック"]
+    C4 -- No --> TALK2["talk: No one available."]
+    TALK2 --> VEV
+    VEV["POST /webhooks/voice-events<br/>HMAC署名検証後"]
+    INS["call_events insertOne<br/>{uuid/event/to/from/status}"]
+    VEV --> INS
+    INS --> C5{"to が ALLOWED番号と一致?"}
+    C5 -- Yes --> UPD["phone_users更新<br/>started→在席true / stopped→false+totalCalls+1"]
+    C5 -- No --> SKIP["更新skip (200返却)"]
+    SKIP --> INV
+    INV["着信: setCallInviteListener(appのみ)<br/>or FCM invite → processPushCallInviteSync"]
+    SVC["VonageVoiceService (Foreground)<br/>通知 + Ringtone + 音声Focus"]
+    INCA["IncomingCallActivity<br/>LOCK対応 → answer/reject → Call画面"]
+    INV --> SVC --> INCA
