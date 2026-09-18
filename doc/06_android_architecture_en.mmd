@@ -1,0 +1,45 @@
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#E8F0FE','primaryTextColor':'#1A1A1A','primaryBorderColor':'#1A73E8','lineColor':'#5F6368','fontFamily':'Helvetica Neue, Helvetica, Arial, sans-serif'}}}%%
+flowchart TB
+    subgraph UI_LAYER["UI layer (Activity + ViewBinding)"]
+        PIA["PhoneInputActivity<br/>LAUNCHER / +81 default<br/>strip + / 6-digit check"]
+        VCA["VerifyCodeActivity<br/>6-digit input + 60s ResendTimer"]
+        DPA["DialPadActivity<br/>keypad + serverCall outbound"]
+        CAA["CallActivity<br/>Connecting/Connected/Hangup<br/>Mute/Speaker/Hangup"]
+        ICA["IncomingCallActivity<br/>lock-screen aware + Ringtone"]
+    end
+    subgraph VM_LAYER["ViewModel layer"]
+        AVM["AuthViewModel<br/>sendOTP/verifyOTP<br/>AuthState LiveData"]
+        DVM["DialPadViewModel<br/>phone LiveData only<br/>(pure, no network)"]
+        CVM["CallViewModel<br/>CallState + mute/speaker<br/>delegates to Application"]
+    end
+    subgraph DATA_LAYER["Data layer"]
+        RETRO["RetrofitClient<br/>Bearer auth + 30s timeout<br/>Gson + HEADERS log"]
+        API["ApiService<br/>7 endpoints defined<br/>execute/enqueue mix"]
+        PREF["SharedPreferencesManager<br/>EncryptedSharedPrefs<br/>stores token/phone/userId"]
+    end
+    subgraph SDK_LAYER["SDK / Service layer"]
+        APP["VoiceVerifyApplication<br/>VGClient AP region / session mgmt<br/>13 listeners / reconnect"]
+        VSVC["VonageVoiceService<br/>Foreground START_STICKY<br/>notification + Ringtone + audio focus"]
+        FSVC["FirebaseMessagingService<br/>handles vonage invite only<br/>processPushCallInviteSync"]
+        HELP["VoiceClientHelper.java<br/>thin createClient wrapper"]
+        RING["RingtonePlayer<br/>prevents overlap + release"]
+    end
+    PIA --> AVM
+    VCA --> AVM
+    DPA --> DVM
+    CAA --> CVM
+    ICA --> APP
+    AVM --> RETRO
+    CVM --> APP
+    DPA --> APP
+    RETRO --> API
+    AVM --> PREF
+    APP --> RETRO
+    VSVC --> APP
+    FSVC --> APP
+    APP --> HELP
+    VSVC --> RING
+    ICA --> RING
+    PIA -- "Success→VerifyCode" --> VCA
+    VCA -- "Success→DialPad" --> DPA
+    DPA -- "serverCall OK→Call" --> CAA

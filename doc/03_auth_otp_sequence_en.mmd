@@ -1,0 +1,36 @@
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#E8F0FE','primaryTextColor':'#1A1A1A','primaryBorderColor':'#1A73E8','lineColor':'#5F6368','fontFamily':'Helvetica Neue, Helvetica, Arial, sans-serif'}, 'sequence':{'mirrorActors':false}}}%%
+sequenceDiagram
+    autonumber
+    actor User as User
+    participant App as Android App<br/>(PhoneInput/VerifyCode<br/>AuthViewModel)
+    participant VCR as Backend (VCR)<br/>auth.ts / index.ts
+    participant DB as MongoDB<br/>phone_users
+    participant Verify as Verify V2 API<br/>api.nexmo.com
+
+    User->>App: enter phone number + display name
+    App->>App: normalize (strip leading +)<br/>validate /^[1-9]d{5,14}$/
+    App->>VCR: POST /api/auth/send-otp<br/>{phoneNumber, displayName}
+    VCR->>VCR: RateLimit otp:IP 5 per 5 min
+    VCR->>VCR: E.164 check + ALLOWED_PHONE_NUMBER match
+    VCR->>DB: updateOne upsert<br/>{isVerified:false, verifyRequestId:unset}
+    VCR->>VCR: tokenGenerate(JWT ttl3600 aud:api.nexmo.com)
+    VCR->>Verify: POST /v2/verify<br/>{brand, code_length:6, workflow:[sms]}
+    Verify-->>VCR: {request_id, status}
+    VCR->>DB: save verifyRequestId
+    VCR-->>App: 200 {requestId, message}
+    App-->>User: go to code entry screen
+    User->>App: enter 6-digit SMS code
+    App->>VCR: POST /api/auth/verify-otp<br/>{phoneNumber, code}
+    VCR->>VCR: RateLimit verify:IP 10 per 5 min
+    VCR->>DB: findOne(phoneNumber)<br/>check verifyRequestId exists
+    VCR->>Verify: POST /v2/verify/{requestId} {code}
+    Verify-->>VCR: {status: completed/failed}
+    alt completed (success)
+        VCR->>DB: $set {isVerified:true, verifiedAt}
+        VCR->>VCR: generateJWT (hand-written RS256)<br/>aud:voice-ng-vapi / 1h
+        VCR-->>App: 200 {verified:true, token, user}
+        App->>App: save to EncryptedSharedPrefs<br/>+ proceed to get VoiceToken
+    else failed / no pending
+        VCR-->>App: 400 {verified:false, status}
+        App-->>User: show error + 60s resend timer
+    end

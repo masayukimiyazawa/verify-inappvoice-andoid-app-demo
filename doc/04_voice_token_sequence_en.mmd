@@ -1,0 +1,31 @@
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#E6F4EA','primaryTextColor':'#1A1A1A','primaryBorderColor':'#137333','lineColor':'#5F6368','fontFamily':'Helvetica Neue, Helvetica, Arial, sans-serif'}}}%%
+sequenceDiagram
+    autonumber
+    participant App as Android App<br/>(AuthVM / Application)
+    participant VCR as Backend voiceAuth.ts<br/>(JWT required)
+    participant DB as MongoDB<br/>user_tokens / push_tokens
+    participant UAPI as Users API (AP)<br/>api-ap.vonage.com
+
+    App->>VCR: POST /api/voice/auth/token {userId(E.164)}
+    VCR->>VCR: PHONE_REGEX + ALLOWED check<br/>RateLimit token:IP 10 per min
+    VCR->>VCR: create sysadmin JWT (exp 120s)
+    VCR->>UAPI: POST /v1/users {name:e164}
+    alt 201 Created / 409 exists
+        Note over VCR,UAPI: continue normally (also on other errors)
+    end
+    VCR->>VCR: create InApp JWT (sub:e164, 24h)<br/>acl: sessions/conversations/rtc etc.
+    VCR->>DB: user_tokens insert<br/>{tokenHash(first 16 of sha256), sessionId, deviceId}
+    VCR-->>App: 200 {token, session_id, device_id}
+    App->>App: saveVoiceToken + createSession(token)<br/>isSessionReady=true
+    App->>VCR: POST /api/voice/register {userId, action:register}
+    VCR->>DB: phone_users upsert<br/>{isInAppAvailable:true}
+    VCR-->>App: 200 {isInAppAvailable:true}
+    App->>App: when FCM onNewToken fires
+    App->>VCR: POST /api/voice/push-token<br/>{userId, deviceId, pushToken}
+    VCR->>DB: push_tokens upsert
+    VCR-->>App: 200 {success:true}
+    Note over App,VCR: on session drop / restart
+    App->>VCR: POST /api/voice/reconnect {userId}
+    VCR->>VCR: regenerate 24h JWT only (same ACL)<br/>(no DB write / no Users create)
+    VCR-->>App: 200 {token, session_id, device_id}
+    App->>App: initVoiceClientWithToken(newToken)

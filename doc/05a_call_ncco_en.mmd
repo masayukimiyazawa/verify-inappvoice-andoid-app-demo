@@ -1,0 +1,25 @@
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#FEF7E0','primaryTextColor':'#1A1A1A','primaryBorderColor':'#E8710A','lineColor':'#5F6368','fontFamily':'Helvetica Neue, Helvetica, Arial, sans-serif'}}}%%
+flowchart LR
+    DIAL["DialPad: 7-digit check + audio permission + E.164"]
+    SCALL["serverCall<br/>{to, type:outbound}"]
+    VAPI1["Voice API<br/>Answer Webhook"]
+    VIN["GET /api/voice/ncco"]
+    C1{"outbound<br/>or inapp?"}
+    NOUT2["connect phone<br/>continue outbound"]
+    C2{"calledNumber<br/>absent?"}
+    TALK1["talk: Invalid"]
+    LOOKUP["phone_users 4-priority lookup"]
+    C3{"Verified and<br/>InApp ready?"}
+    NAPP["connect app<br/>InApp preferred"]
+    C4{"pstn number<br/>present?"}
+    NPSTN["connect phone<br/>PSTN fallback"]
+    TALK2["talk: No one"]
+    DIAL --> SCALL --> VAPI1 --> VIN --> C1
+    C1 -- Yes --> NOUT2
+    C1 -- No --> C2
+    C2 -- Yes --> TALK1
+    C2 -- No --> LOOKUP --> C3
+    C3 -- Yes --> NAPP
+    C3 -- No --> C4
+    C4 -- Yes --> NPSTN
+    C4 -- No --> TALK2

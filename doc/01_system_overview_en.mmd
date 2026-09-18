@@ -1,0 +1,35 @@
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#E8F0FE','primaryTextColor':'#1A1A1A','primaryBorderColor':'#1A73E8','lineColor':'#5F6368','secondaryColor':'#FEF7E0','tertiaryColor':'#E6F4EA','fontFamily':'Helvetica Neue, Helvetica, Arial, sans-serif'}, 'flowchart':{'curve':'linear'}}}%%
+flowchart TB
+    subgraph APP["Android App (Kotlin)"]
+        direction LR
+        UI["UI layer<br/>PhoneInput / VerifyCode<br/>DialPad / Call / Incoming"]
+        VM["ViewModel layer<br/>Auth / DialPad / Call"]
+        NET["Retrofit + EncryptedPrefs<br/>Bearer auth / token storage"]
+        SDK["VoiceClient / FCM<br/>ForegroundService"]
+        UI --> VM --> NET
+    end
+    subgraph BACKEND["Backend VCR (Node.js 20 + TS)"]
+        direction TB
+        H["handler index.ts<br/>health / CORS / RateLimit / JWT"]
+        AUTH["auth.ts Verify V2 OTP"]
+        VOICE["voice.ts NCCO / outbound"]
+        VAUTH["voiceAuth.ts JWT / register / push"]
+        WH["webhooks.ts persistence"]
+        H --> AUTH & VOICE & VAUTH & WH
+    end
+    subgraph CLOUD["Vonage Cloud + MongoDB"]
+        direction LR
+        VERIFY["Verify V2 API"]
+        VAPI["Voice API<br/>PSTN / NCCO"]
+        UAPI["Users API (AP)"]
+        MDB[("MongoDB<br/>4 collections")]
+        VERIFY --- VAPI --- UAPI --- MDB
+    end
+    NET -->|"HTTPS REST"| H
+    SDK -->|"HTTPS REST"| H
+    SDK <-->|"WebRTC / VoIP"| VAPI
+    AUTH <--> VERIFY
+    VOICE <--> VAPI
+    VAUTH <--> UAPI
+    BACKEND <--> MDB
+    VAPI -->|"Answer/Event Webhook"| H

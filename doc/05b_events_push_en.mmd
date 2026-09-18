@@ -1,0 +1,14 @@
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#E8F0FE','primaryTextColor':'#1A1A1A','primaryBorderColor':'#1A73E8','lineColor':'#5F6368','fontFamily':'Helvetica Neue, Helvetica, Arial, sans-serif'}}}%%
+flowchart LR
+    VEV["POST webhooks<br/>signature verify"]
+    INS["call_events<br/>insertOne"]
+    C5{"matches ALLOWED<br/>number?"}
+    UPD["phone_users update<br/>presence / count"]
+    SKIP["skip update<br/>return 200"]
+    INV["3 incoming paths<br/>Listener/FCM/Service"]
+    SVC["ForegroundService<br/>notification + Ringtone"]
+    INCA["IncomingCall<br/>→ Call screen"]
+    VEV --> INS --> C5
+    C5 -- Yes --> UPD --> INV
+    C5 -- No --> SKIP --> INV
+    INV --> SVC --> INCA

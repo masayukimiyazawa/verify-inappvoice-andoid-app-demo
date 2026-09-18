@@ -1,0 +1,32 @@
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#FEF7E0','primaryTextColor':'#1A1A1A','primaryBorderColor':'#E8710A','lineColor':'#5F6368','fontFamily':'Helvetica Neue, Helvetica, Arial, sans-serif'}}}%%
+flowchart TB
+    DIAL["DialPad: 7-digit check + audio permission + E.164<br/>retry up to 5 times until session ready"]
+    SCALL["voiceClient.serverCall<br/>{to:E.164, type:outbound}"]
+    VAPI1["Vonage Voice API<br/>Answer Webhook trigger"]
+    NCCO_OUT["GET /api/voice/ncco<br/>type=outbound → connect phone"]
+    DIAL --> SCALL --> VAPI1 --> NCCO_OUT
+    NCCO_OUT --> VIN
+    VIN["Voice API → GET /api/voice/ncco<br/>{to/from/context}"]
+    C1{"type==outbound<br/>or inapp?"}
+    VIN --> C1
+    C1 -- Yes --> NOUT2["connect phone (continue outbound)<br/>from: VONAGE number"]
+    C1 -- No --> C2{"calledNumber<br/>absent?"}
+    C2 -- Yes --> TALK1["talk: Invalid call. Goodbye."]
+    C2 -- No --> LOOKUP["phone_users 4-priority lookup<br/>verified+present → verified → present → any"]
+    LOOKUP --> C3{"isVerified and<br/>isInAppAvailable?"}
+    C3 -- Yes --> NAPP["connect app (InApp preferred)<br/>endpoint app:user=E.164"]
+    C3 -- No --> C4{"pstnNumber<br/>present?"}
+    C4 -- Yes --> NPSTN["connect phone<br/>PSTN fallback"]
+    C4 -- No --> TALK2["talk: No one available."]
+    TALK2 --> VEV
+    VEV["POST /webhooks/voice-events<br/>after HMAC verification"]
+    INS["call_events insertOne<br/>{uuid/event/to/from/status}"]
+    VEV --> INS
+    INS --> C5{"to matches ALLOWED number?"}
+    C5 -- Yes --> UPD["phone_users update<br/>started→present true / stopped→false+totalCalls+1"]
+    C5 -- No --> SKIP["skip update (return 200)"]
+    SKIP --> INV
+    INV["Incoming: setCallInviteListener(app only)<br/>or FCM invite → processPushCallInviteSync"]
+    SVC["VonageVoiceService (Foreground)<br/>notification + Ringtone + audio focus"]
+    INCA["IncomingCallActivity<br/>lock-screen aware → answer/reject → Call screen"]
+    INV --> SVC --> INCA

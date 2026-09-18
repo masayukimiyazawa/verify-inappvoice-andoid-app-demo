@@ -1,0 +1,49 @@
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#E6F4EA','primaryTextColor':'#1A1A1A','primaryBorderColor':'#137333','lineColor':'#5F6368','fontFamily':'Helvetica Neue, Helvetica, Arial, sans-serif'}}}%%
+erDiagram
+    phone_users {
+        ObjectId _id PK
+        string phoneNumber "acts as unique key (+ present/absent)"
+        string displayName "nullable"
+        boolean isVerified
+        string verifyRequestId "VerifyV2 request_id"
+        boolean isInAppAvailable
+        int totalCalls "incremented by webhook"
+        string lastCallStatus
+        datetime lastCallAt
+        datetime verifiedAt "dynamic field"
+        datetime createdAt
+        datetime updatedAt
+    }
+    call_events {
+        ObjectId _id PK
+        string uuid "Vonage call uuid"
+        string event "started/ringing/answered/completed etc"
+        string to
+        string from
+        string conversationUuid
+        string status
+        int duration
+        string recordingUrl
+        datetime createdAt
+    }
+    user_tokens {
+        ObjectId _id PK
+        string userId "E.164 (+ present)"
+        string tokenHash "first 16 chars of sha256"
+        string sessionId "uuid"
+        string deviceId "uuid"
+        datetime issuedAt
+        datetime expiresAt "24h"
+        boolean used "always false"
+    }
+    push_tokens {
+        ObjectId _id PK
+        string userId "E.164"
+        string deviceId
+        string pushToken "FCM token"
+        datetime createdAt
+        datetime updatedAt
+    }
+    phone_users ||--o{ call_events : "linked by to/from (non-FK)"
+    phone_users ||--o{ user_tokens : "linked by userId (non-FK)"
+    phone_users ||--o{ push_tokens : "linked by userId (non-FK)"
